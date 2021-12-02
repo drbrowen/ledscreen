@@ -2,11 +2,14 @@ CC = cc
 RM = rm -f
 COPTIONS=-O3
 CINCLUDES=-I../rpi_ws281x/
-CLIBS = -L../rpi_ws281x/ -lws2811 -lm
+CLIBS = -L../rpi_ws281x/ -lws2811 -lm -lgif
 
-PROG=brotest
+PROG=ledtest
 
-COBJS= main.o
+COBJS= main.o \
+	gifloader.o \
+
+
 
 all: $(PROG)
 

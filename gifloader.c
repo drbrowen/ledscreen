@@ -5,13 +5,11 @@
 #define SPRITEHEIGHT 16
 #define SPRITEWIDTH  16
 
+int gifinit
+
 int main(int argc,char* argv[])
 {
-  GifFileType *F;
-  SavedImage *S;
-  ColorMapObject *C;
   GifColorType rgb;
-  GraphicsControlBlock gcb;
   int i,j;
   int error;
   int xpos,ypos,red,green,blue;
