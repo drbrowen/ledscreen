@@ -1,8 +1,19 @@
-#ifndef MAKE_DISPLAY
-#define MAKE_DISPLAY
+#ifndef MAKE_DISPLAY_INCLUDE
+#define MAKE_DISPLAY_INCLUDE
 
 #include "ws2811.h"
-int make_display(ws2811_led_t MATRIX[],int sx,int sy);
+#include "gifloader.h"
 
+typedef struct {
+  GIFLOADER *gfl;
+  GifColorType **sprites;
+  int phase;
+  int SpriteW;
+  int SpriteH;
+} MAKEDISPLAY;
 
-#endif // MAKE_DISPLAY
+MAKEDISPLAY *initialize_display();
+int make_display(MAKEDISPLAY *dis,ws2811_led_t MATRIX[][15]);
+void close_display(MAKEDISPLAY *dis);
+
+#endif // MAKE_DISPLAY_INCLUDE

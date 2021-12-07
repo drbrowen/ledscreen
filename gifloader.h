@@ -1,9 +1,10 @@
-#ifndef GIFLOADER
-#define GIFLOADER
+#ifndef GIFLOADER_INCLUDE
+#define GIFLOADER_INCLUDE
 
+#include <stdlib.h>
 #include <gif_lib.h>
 
-struct {
+typedef struct {
   GifFileType *F;
   SavedImage *S;
   ColorMapObject *C;
@@ -14,6 +15,8 @@ struct {
 
 GIFLOADER *gifloader_open(char* file,int SpriteH,int SpriteW);
 GifColorType *gifloader_fetch_sprite(GIFLOADER *gfl,int SpriteX, int SpriteY);
+void gifloader_free_sprite(GifColorType *gct);
+GIFLOADER *gifloader_close(GIFLOADER *gfl);
 
 
-#endif // GIFLOADER
+#endif // GIFLOADER_INCLUDE

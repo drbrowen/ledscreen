@@ -8,10 +8,14 @@ PROG=ledtest
 
 COBJS= main.o \
 	gifloader.o \
+	make_display.o \
 
 
 
 all: $(PROG)
+
+testgifloader: gifloader.h gifloader.c testgifloader.c
+	$(CC) -o $@ $(COPTIONS) $(CINCLUDES) $(CLIBS) gifloader.c testgifloader.c
 
 $(PROG): $(COBJS) ../rpi_ws281x/libws2811.a
 	$(RM) $@

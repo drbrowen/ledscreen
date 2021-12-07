@@ -1,3 +1,9 @@
+#include <signal.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <stdio.h>
+#include <string.h>
+#include <errno.h>
 #include "clk.h"
 #include "gpio.h"
 #include "dma.h"
@@ -43,7 +49,7 @@ ws2811_t ledstring =
     },
 };
 
-ws2811_led_t buffer[LED_COUNT];
+//ws2811_led_t buffer[LED_COUNT];
 
 ws2811_led_t matrix[YSIZE][XSIZE];
 
@@ -77,8 +83,8 @@ int push_matrix() {
   
   for (j=0;j<YSIZE;j+=2) {
     for(i=0;i<XSIZE;i++) {
-      buffer[(XSIZE*j)+i] = matrix[j][i];
-      buffer[(XSIZE*(j+1)) + i] = matrix[j][XSIZE-i];
+      ledstring.channel[0].leds[(XSIZE*j)+i] = matrix[j][i];
+      ledstring.channel[0].leds[(XSIZE*(j+1)) + i] = matrix[j+1][XSIZE-i-1];
     }
   }
 
@@ -95,6 +101,10 @@ int push_matrix() {
 int main(int argc,char* argv[])
 {
   ws2811_return_t ret;
+  int error;
+
+  MAKEDISPLAY *dis;
+  
   error = 0;
 
   setup_handlers();
@@ -104,14 +114,21 @@ int main(int argc,char* argv[])
     return ret;
   }
 
+  if(!(dis=initialize_display())) {
+    fprintf(stderr,"Uh oh, can't init display.\n");
+    exit(1);
+  }
+  
   while(running == 1) {
-    make_display(matrix,XSIZE,YSIZE);
+    make_display(dis,matrix);
     if(push_matrix()) {
       running=0;
       error = 1;
     }
   }
 
+  close_display(dis);
+  
   clear_buffer();
   push_matrix();
 

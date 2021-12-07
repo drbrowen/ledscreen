@@ -13,90 +13,85 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
+#include <malloc.h>
+#include <errno.h>
+#include "gifloader.h"
+#include "make_display.h"
 
-#define PNG_DEBUG 3
-#include <png.h>
 
-void abort_(const char * s, ...)
+MAKEDISPLAY *initialize_display()
 {
-        va_list args;
-        va_start(args, s);
-        vfprintf(stderr, s, args);
-        fprintf(stderr, "\n");
-        va_end(args);
-        abort();
-}
-
-static int x, y;
-
-static int width, height;
-static png_byte color_type;
-static png_byte bit_depth;
-
-static png_structp png_ptr;
-static png_infop info_ptr;
-static int number_of_passes;
-static png_bytep * row_pointers;
-
-void read_png_file(char* file_name)
-{
-        char header[8];    // 8 is the maximum size that can be checked
-
-        /* open file and test for it being a png */
-        FILE *fp = fopen(file_name, "rb");
-        if (!fp)
-                abort_("[read_png_file] File %s could not be opened for reading", file_name);
-        fread(header, 1, 8, fp);
-        if (png_sig_cmp(header, 0, 8))
-                abort_("[read_png_file] File %s is not recognized as a PNG file", file_name);
-
-
-        /* initialize stuff */
-        png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
-
-        if (!png_ptr)
-                abort_("[read_png_file] png_create_read_struct failed");
-
-        info_ptr = png_create_info_struct(png_ptr);
-        if (!info_ptr)
-                abort_("[read_png_file] png_create_info_struct failed");
-
-        if (setjmp(png_jmpbuf(png_ptr)))
-                abort_("[read_png_file] Error during init_io");
-
-        png_init_io(png_ptr, fp);
-        png_set_sig_bytes(png_ptr, 8);
-
-        png_read_info(png_ptr, info_ptr);
-
-        width = png_get_image_width(png_ptr, info_ptr);
-        height = png_get_image_height(png_ptr, info_ptr);
-        color_type = png_get_color_type(png_ptr, info_ptr);
-        bit_depth = png_get_bit_depth(png_ptr, info_ptr);
-
-        number_of_passes = png_set_interlace_handling(png_ptr);
-        png_read_update_info(png_ptr, info_ptr);
-
-
-        /* read file */
-        if (setjmp(png_jmpbuf(png_ptr)))
-                abort_("[read_png_file] Error during read_image");
-
-        row_pointers = (png_bytep*) malloc(sizeof(png_bytep) * height);
-        for (y=0; y<height; y++)
-                row_pointers[y] = (png_byte*) malloc(png_get_rowbytes(png_ptr,info_ptr));
-
-        png_read_image(png_ptr, row_pointers);
-
-        fclose(fp);
-}
-
-int initialize_display()
-{
-  read_png_file("pacmansprites.png");  
-}
-
-int make_display(ws2811_led_t MATRIX[],int sx,int sy)
-{
+  MAKEDISPLAY *ret;
+  int i,j,c;
   
+  if(!(ret=malloc(sizeof(MAKEDISPLAY)))) {
+    perror("Allocate Display");
+    return NULL;
+  }
+
+  ret->SpriteW = 16;
+  ret->SpriteH = 16;
+
+  if(!(ret->gfl = gifloader_open("spritecloseupsingle.gif",ret->SpriteW,ret->SpriteH))) {
+    printf("Can't open gif\n");
+    free(ret);
+    return NULL;
+  }
+			  
+  if(!(ret->sprites = malloc(sizeof(GifColorType*)*8*4))) {
+    perror("Allocate sprite memory");
+    gifloader_close(ret->gfl);
+    free(ret);
+    return NULL;
+  }
+
+  c=0;
+  for(j=2;j<6;j++) {
+    for(i=0;i<8;i++) {
+      if(!(ret->sprites[c++] = gifloader_fetch_sprite(ret->gfl,i,j))) {
+	fprintf(stderr,"Got a NULL sprite!\n");
+	free(ret->sprites);
+	gifloader_close(ret->gfl);
+	free(ret);
+	return NULL;
+      }
+    }
+  }
+
+  ret->phase = 0;
+
+  return ret;  
+  
+}
+
+int make_display(MAKEDISPLAY *dis,ws2811_led_t MATRIX[][15])
+{
+  int i,j,jone,jcoord,jonecoord,coord,mirrorcoord;
+
+  GifColorType *sprite;
+
+  sprite=dis->sprites[(dis->phase++)>>2];
+
+  if (dis->phase >= 8*16) {
+    dis->phase = 0;
+  }
+  
+  for(j=0;j<16;j++) {
+    for(i=0;i<15;i++) {
+      MATRIX[j][i] =
+	sprite[dis->SpriteW*j + i].Red +
+	sprite[dis->SpriteW*j + i].Green*0x100 +
+	sprite[dis->SpriteW*j + i].Blue*0x10000;
+    }
+  }
+
+  return 0;
+	
+}
+
+void close_display(MAKEDISPLAY *dis)
+{
+  gifloader_close(dis->gfl);
+  free(dis->sprites);
+  free(dis);
 }
