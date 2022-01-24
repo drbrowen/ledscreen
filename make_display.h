@@ -15,5 +15,6 @@ typedef struct {
 MAKEDISPLAY *initialize_display();
 int make_display(MAKEDISPLAY *dis,ws2811_led_t MATRIX[][15]);
 void close_display(MAKEDISPLAY *dis);
+void _put_sprite(MAKEDISPLAY *dis,ws2811_led_t MATRIX[][15],GifColorType *sprite,int x, int y);
 
 #endif // MAKE_DISPLAY_INCLUDE
